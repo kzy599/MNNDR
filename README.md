@@ -23,34 +23,38 @@ Process raw genotype sequence data through:
 ### 2. SNP Panel Creation
 ```bash
 createMapHaplo.sh
-、、、
+```
 
-### 2. SNP Panel Creation
-3. Dataset Generation
+
+### 3. Dataset Generation
+```R
 Rscript dataGenerator.r
-
+```
 Note: Configure these parameters in the script before execution:
 
 Dominance degree magnitude
 Epistatic-to-additive ratio
-4. DL Network Optimization
-main_tunning.py
+### 4. DL Network Optimization
+```python
+python main_tunning.py --th
+python mian_tunning.py --th --double
+python main_tunning.py --th --double --linear
+```
+Performs hyperparameter tuning for DL.
 
-Performs hyperparameter tuning for deep learning architectures.
-
-5. Model Validation
+### 5. Model Validation
 Rscript runR.r
 
 Important: Update hyperparameters in these files first:
 
 main.py
 utils.py
-6. Result Analysis
+### 6. Result Analysis
 Rscript analyzeResult.r
 
 Generates performance comparisons and visualizations between DL networks and BLUP models.
 
-Maintainers
+### Maintainers
 For questions or support, please contact:
 
 Ziyi Kang
