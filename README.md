@@ -1,6 +1,6 @@
-# MT-DLnetwork
+![image](https://github.com/user-attachments/assets/6ae56ba9-fd67-4dce-938f-d046dca1bf80)# MNNDR
 
-This repository supports the unpublished research paper: **"Deep Learning and multi-trait genomic prediction facilitate selective breeding for summer mortality resistance in Pacific oyster (_Crassostrea gigas_)"**.
+This repository supports the unpublished research paper: **"MNNDR: multi-Input neural network improves single- and multi-trait genomic prediction of disease resistance in aquaculture"**.
 
 ## Prerequisites
 
@@ -12,6 +12,7 @@ Before running the program, ensure the following dependencies are installed:
   `gtx.cat` (recommended) **or** GATK + samtools (alternative)
 
 ## Workflow Overview
+### Simulated datasets
 
 ### 1. Genotype Data Processing
 Process raw genotype sequence data through:
@@ -56,6 +57,13 @@ utils.py
 Rscript analyzeResult.r
 ```
 Generates performance comparisons and visualizations between DL networks and BLUP models.
+
+### Real datasets
+
+### 1. Unzip the `Crap1259.zip` or `Trout1935.zip`
+### 2. Process the data format using `dataGenerator.r`
+### 3. Perform 5-fold cross-validation using `runR.r`
+
 
 ### Maintainers
 For questions or support, please contact:
