@@ -315,15 +315,6 @@ def cnn_model(num_genotype_features,doubleT,Th,softm,linear):
 
     model = models.Model(inputs=X_in, outputs=output)
 
-    for layer in model.layers:
-
-        if hasattr(layer, 'kernel_regularizer'):
-
-            layer.kernel_regularizer = l2(0.01)
-        
-        if hasattr(layer, 'bias_regularizer'):
-        
-            layer.bias_regularizer = l2(0.01)
 
     optimizer = optimizers.Adam(learning_rate=learning_rate)
     
@@ -459,15 +450,7 @@ def fc_model(rel_features,doubleT,Th,softm,linear):
 
     model = models.Model(inputs=rel_in, outputs=output)
 
-    for layer in model.layers:
 
-        if hasattr(layer, 'kernel_regularizer'):
-
-            layer.kernel_regularizer = l2(0.01)
-        
-        if hasattr(layer, 'bias_regularizer'):
-        
-            layer.bias_regularizer = l2(0.01)
 
     optimizer = optimizers.Adam(learning_rate=learning_rate)
     
@@ -655,17 +638,6 @@ def mul_model(num_genotype_features,rel_features,doubleT,Th,softm,linear):
     
     model = models.Model(inputs=[X_in, rel_in], outputs=output)
     
-
-    for layer in model.layers:
-
-        if hasattr(layer, 'kernel_regularizer'):
-
-            layer.kernel_regularizer = l2(0.01)
-
-        if hasattr(layer, 'bias_regularizer'):
-
-            layer.bias_regularizer = l2(0.01)
-
 
     optimizer = optimizers.Adam(learning_rate=learning_rate)
     
