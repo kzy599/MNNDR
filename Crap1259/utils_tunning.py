@@ -301,15 +301,17 @@ def cnn_model(hp,num_genotype_features,doubleT,Th,softm,linear):
 
     model = models.Model(inputs=X_in, outputs=output)
 
-    for layer in model.layers:
+    # the following code don't work you can delete it:
 
-        if hasattr(layer, 'kernel_regularizer'):
+    # for layer in model.layers:
 
-            layer.kernel_regularizer = l2(0.01)
+    #     if hasattr(layer, 'kernel_regularizer'):
+
+    #         layer.kernel_regularizer = l2(0.01)
         
-        if hasattr(layer, 'bias_regularizer'):
+    #     if hasattr(layer, 'bias_regularizer'):
         
-            layer.bias_regularizer = l2(0.01)
+    #         layer.bias_regularizer = l2(0.01)
 
     optimizer = optimizers.Adam(learning_rate=learning_rate)
     
