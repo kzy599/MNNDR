@@ -1,4 +1,4 @@
-![image](https://github.com/user-attachments/assets/6ae56ba9-fd67-4dce-938f-d046dca1bf80)# MNNDR
+# MNNDR
 
 This repository supports the unpublished research paper: **"MNNDR: multi-Input neural network improves single- and multi-trait genomic prediction of disease resistance in aquaculture"**.
 
