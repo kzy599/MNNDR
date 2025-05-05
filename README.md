@@ -12,7 +12,7 @@ Before running the program, ensure the following dependencies are installed:
   `gtx.cat` (recommended) **or** GATK + samtools (alternative)
 
 ## Workflow Overview
-### Simulated datasets
+## Simulated datasets
 
 ### 1. Genotype Data Processing
 Process raw genotype sequence data through:
@@ -58,7 +58,7 @@ Rscript analyzeResult.r
 ```
 Generates performance comparisons and visualizations between DL networks and BLUP models.
 
-### Real datasets
+## Real datasets
 
 ### 1. Unzip the `Crap1259.zip` or `Trout1935.zip`
 ### 2. Process the data format using `dataGenerator.r`
