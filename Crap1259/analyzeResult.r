@@ -223,7 +223,8 @@ zt1[Vtype == "ac",Vtype:="Individual accuracy"]
 zt1[Vtype == "auc",Vtype:="AUC"]
 zt1$Vtype = factor(zt1$Vtype,level = c("Individual accuracy","AUC"))
 zt1[, letter_y_value := value + 1.1 * value_sd, by = Vtype]
-zt1[, letter_y_test := value + 3.1 * value_sd, by = Vtype]
+zt1[, letter_y_test := value + 3.5 * value_sd, by = Vtype]
+zt1[Vtype == "AUC", letter_y_test := value + 5.1 * max(value_sd)]
 P <- ggplot(data = zt1, aes(x = MODE, y = value, group = MODE, fill = MODE)) +
   geom_bar(stat = "identity", position = position_dodge(width = 0.9),width = 0.9) +  # 确保条形图分组不重叠
   geom_text(aes(label = round(value,2),y = letter_y_value), position = position_dodge(width = 0.9),vjust = 0, size = 4) +  # 添加数值标签
@@ -235,7 +236,7 @@ P <- ggplot(data = zt1, aes(x = MODE, y = value, group = MODE, fill = MODE)) +
                 position = position_dodge(width = 0.9),  # 与条形图对齐
                 width = 0.2, alpha = 0.5) +
   labs(fill = "Mat") +
-  scale_fill_aaas()+geom_text(aes(label = Letter, y = letter_y_test), position = position_dodge(width = 0.9),vjust = 0) + facet_wrap(~Vtype+type, scales = "free")+
+  scale_fill_aaas()+geom_text(aes(label = Letter, y = letter_y_test), position = position_dodge(width = 0.9),vjust = 0) + facet_wrap(~type+Vtype, scales = "free")+
   ggtitle(label = "ST prediction",subtitle = "Simulated dataset (high non-additive)") +
   theme(
     plot.title = element_text(
