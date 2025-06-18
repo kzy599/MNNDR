@@ -195,6 +195,67 @@ ggsave("Figrue_acc_crap_all.pdf", P , width = 17, height = 8, dpi = 300)
 ggsave("Figrue_acc_trout_all.pdf", P , width = 17, height = 8, dpi = 300)
 
 
+value_type = c("ac","auc")
+type = c("ST","MT")
+output_test = data.table()
+
+for(t in type){
+
+for(v in value_type){
+
+  temp_dt = pac[type == t,]
+  
+  aov_res <- aov(as.formula(paste(v, "~ MODE")), data = temp_dt)
+  
+  tukey_res <- TukeyHSD(aov_res,conf.level = 0.95)
+  
+  letters <- multcompLetters4(aov_res, tukey_res)
+  
+  output_test = rbind(output_test,data.table(MODE = names(letters$MODE$Letters),Letter = letters$MODE$Letters,type = t,Vtype = v))
+   
+}
+}
+zt = checking(pac_mean_sd,cal = "ACC")
+zt1 <- merge(output_test, zt, by = c("MODE", "type","Vtype"), all = FALSE)
+zt1$MODE = factor(zt1$MODE,level = c("GBLUP","FCN","CNN","MNNDR"))
+zt1$type = factor(zt1$type,level = c("ST","MT"))
+zt1[Vtype == "ac",Vtype:="Individual accuracy"]
+zt1[Vtype == "auc",Vtype:="AUC"]
+zt1$Vtype = factor(zt1$Vtype,level = c("Individual accuracy","AUC"))
+zt1[, letter_y_value := value + 1.1 * value_sd, by = Vtype]
+zt1[, letter_y_test := value + 3.5 * value_sd, by = Vtype]
+zt1[Vtype == "AUC", letter_y_test := value + 5.1 * max(value_sd)]
+P <- ggplot(data = zt1, aes(x = MODE, y = value, group = MODE, fill = MODE)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9),width = 0.9) +  # 确保条形图分组不重叠
+  geom_text(aes(label = round(value,2),y = letter_y_value), position = position_dodge(width = 0.9),vjust = 0, size = 4) +  # 添加数值标签
+  xlab("Model") +
+  ylab("Value") +
+  theme_zg() +
+  theme(legend.position ="right", legend.title = element_blank()) +
+  geom_errorbar(aes(ymin = value - value_sd, ymax = value + value_sd),
+                position = position_dodge(width = 0.9),  # 与条形图对齐
+                width = 0.2, alpha = 0.5) +
+  labs(fill = "Mat") +
+  scale_fill_aaas()+geom_text(aes(label = Letter, y = letter_y_test), position = position_dodge(width = 0.9),vjust = 0) + facet_wrap(~type+Vtype, scales = "free")+
+  ggtitle(label = "ST and MT prediticon accuracy across models",subtitle = "Trout1935") +
+  theme(
+    plot.title = element_text(
+      size = 20,          # 大字号
+      face = "bold",      # 加粗
+      hjust = 0.5,        # 居中
+      color = "black"     # 颜色（可选）
+    ),
+    # 调整x轴标签字体
+    axis.title.x = element_text(size = 16, face = "bold", color = "black"),
+    # 调整y轴标签字体
+    axis.title.y = element_text(size = 16, face = "bold", color = "black"),
+    #调整副标题
+    plot.subtitle = element_text(size = 12, hjust = 0.5, face = "italic")
+  )
+ggsave("Figrue_acc_trout_all.pdf", P , width = 17, height = 8, dpi = 300)
+
+
+
 # zt = checking(wac_mean_sd,pac_mean_sd,cal = "VAR")
 # zt1 = zt[Vtype!="fwcova",]
 # zt1$MODE = factor(zt1$MODE,level = c("PBLUP","GBLUP","FCN","CNN","MNN"))
