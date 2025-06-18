@@ -571,8 +571,9 @@ zt1[Vtype == "famacc",Vtype:="Family"]
 zt1[Vtype == "wfac",Vtype:="Within-family"]
 zt1$Vtype = factor(zt1$Vtype,level = c("Individual","Family","Within-family"))
 zt1[, letter_y_value := value + 1.1 * value_sd, by = Vtype]
-zt1[, letter_y_test := value + 3.1 * value_sd, by = Vtype]
-P <- ggplot(data = zt1[type == "ST",], aes(x = MODE, y = value, group = MODE, fill = MODE)) +
+zt1[, letter_y_test := value + 3.1 * max(value_sd), by = Vtype]
+zt1[Vtype != "Within-family", letter_y_test := value + 5.1 * max(value_sd)]
+P <- ggplot(data = zt1, aes(x = MODE, y = value, group = MODE, fill = MODE)) +
   geom_bar(stat = "identity", position = position_dodge(width = 0.9),width = 0.9) +  # 确保条形图分组不重叠
   geom_text(aes(label = round(value,2),y = letter_y_value), position = position_dodge(width = 0.9),vjust = 0, size = 4) +  # 添加数值标签
   xlab("Model") +
@@ -599,4 +600,4 @@ P <- ggplot(data = zt1[type == "ST",], aes(x = MODE, y = value, group = MODE, fi
     #调整副标题
     plot.subtitle = element_text(size = 12, hjust = 0.5, face = "italic")
   )
-ggsave("Figrue_ac_high.pdf", P , width = 15, height = 6, dpi = 300)
+ggsave("Figrue_ac_high.pdf", P , width = 15, height = 15, dpi = 300)
