@@ -196,7 +196,40 @@ ggsave("Figrue_acc_trout_all.pdf", P , width = 17, height = 8, dpi = 300)
 
 
 
-y_lab_name = "AUC"
+setwd("/home/kangziyi/comparsionDL/RealData/rainbow")#trout
+
+pac_mean_sd = fread("pac_mean_sd.csv",sep = ",")
+pac_mean_sd <- classModel(pac_mean_sd)
+
+pac = fread("pac.csv",sep = ",")
+pac = classModel(pac)
+
+DT_test = function(type,value_type,pac){
+
+output_test = data.table()
+
+for(t in type){
+
+for(v in value_type){
+
+  temp_dt = pac[type == t,]
+  
+  aov_res <- aov(as.formula(paste(v, "~ MODE")), data = temp_dt)
+  
+  tukey_res <- TukeyHSD(aov_res,conf.level = 0.95)
+  
+  letters <- multcompLetters4(aov_res, tukey_res)
+  
+  output_test = rbind(output_test,data.table(MODE = names(letters$MODE$Letters),Letter = letters$MODE$Letters,type = t,Vtype = v))
+   
+}
+
+}
+return(output_test)
+
+}
+
+y_lab_name = "Individual accuracy"
 dataset_name = "(Trout1935)"
 value_type = c("ac","auc")
 type = c("ST","MT")
@@ -211,7 +244,7 @@ zt1$Vtype = factor(zt1$Vtype,level = c("Individual accuracy","AUC"))
 if(y_lab_name == "Individual accuracy"){
 zt1[, letter_y_value := value + 1.1 * value_sd, by = Vtype]
 zt1[, letter_y_test := value + 3.1 * value_sd, by = Vtype]
-zt1[MODE== "FCN"&type=="MT", letter_y_test := value + 6.1 * value_sd]
+zt1[MODE== "FCN"&type=="MT", letter_y_test := value + 3.1 * value_sd]
 }else{
 zt1[, letter_y_value := value + 1.1 * value_sd, by = Vtype]
 zt1[, letter_y_test := value + 6.1 * value_sd, by = Vtype]
