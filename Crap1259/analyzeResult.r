@@ -195,8 +195,17 @@ ggsave("Figrue_acc_crap_all.pdf", P , width = 17, height = 8, dpi = 300)
 ggsave("Figrue_acc_trout_all.pdf", P , width = 17, height = 8, dpi = 300)
 
 
-value_type = c("ac","auc")
-type = c("ST","MT")
+
+setwd("/home/kangziyi/comparsionDL/RealData/crap")#trout
+
+pac_mean_sd = fread("pac_mean_sd.csv",sep = ",")
+pac_mean_sd <- classModel(pac_mean_sd)
+
+pac = fread("pac.csv",sep = ",")
+pac = classModel(pac)
+
+DT_test = function(type,value_type,pac){
+
 output_test = data.table()
 
 for(t in type){
@@ -214,7 +223,86 @@ for(v in value_type){
   output_test = rbind(output_test,data.table(MODE = names(letters$MODE$Letters),Letter = letters$MODE$Letters,type = t,Vtype = v))
    
 }
+
 }
+return(output_test)
+
+}
+
+
+# df = checking_rep(wac,pac,cal="ACC")
+
+# output_test <- data.table()
+# for(t in unique(df$type)){
+# for (g in unique(df$Vtype)) {
+
+#   sub <- df %>% filter(Vtype == g, type == t)
+  
+#   # Run ANOVA + Tukey
+#   aov_res <- aov(value ~ MODE, data = sub)
+#   tukey_res <- TukeyHSD(aov_res)
+#   letters <- multcompLetters4(aov_res, tukey_res)
+  
+#   letter_df <- data.frame(
+#     MODE = names(letters$MODE$Letters),
+#     Letter = letters$MODE$Letters,
+#     Vtype = g,
+#     type = t
+#   )
+  
+#   output_test <- bind_rows(output_test, letter_df)
+# }
+# }
+
+y_lab_name = "AUC"
+dataset_name = "(Carp1259)"
+value_type = c("ac","auc")
+type = c("ST","MT")
+zt = checking(pac_mean_sd,cal = "ACC")
+output_test = DT_test(type,value_type,pac)
+zt1 <- merge(output_test, zt, by = c("MODE", "type","Vtype"), all = FALSE)
+zt1$MODE = factor(zt1$MODE,level = c("GBLUP","FCN","CNN","MNNDR"))
+zt1$type = factor(zt1$type,level = c("ST","MT"))
+zt1[Vtype == "ac",Vtype:="Individual accuracy"]
+zt1[Vtype == "auc",Vtype:="AUC"]
+zt1$Vtype = factor(zt1$Vtype,level = c("Individual accuracy","AUC"))
+if(y_lab_name == "Individual accuracy"){
+zt1[, letter_y_value := value + 1.1 * value_sd, by = Vtype]
+zt1[, letter_y_test := value + 3.1 * value_sd, by = Vtype]
+zt1[MODE== "FCN"&type=="MT", letter_y_test := value + 6.1 * value_sd]
+}else{
+zt1[, letter_y_value := value + 1.1 * value_sd, by = Vtype]
+zt1[, letter_y_test := value + 6.1 * value_sd, by = Vtype]
+}
+P <- ggplot(data = zt1[Vtype==y_lab_name,], aes(x = MODE, y = value, group = MODE, fill = MODE)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9),width = 0.9) +  # 确保条形图分组不重叠
+  geom_text(aes(label = round(value,2),y = letter_y_value), position = position_dodge(width = 0.9),vjust = 0, size = 4) +  # 添加数值标签
+  xlab("Model") +
+  ylab(y_lab_name) +
+  theme_zg() +
+  theme(legend.position ="right", legend.title = element_blank()) +
+  geom_errorbar(aes(ymin = value - value_sd, ymax = value + value_sd),
+                position = position_dodge(width = 0.9),  # 与条形图对齐
+                width = 0.2, alpha = 0.5) +
+  labs(fill = "Mat") +
+  scale_fill_aaas()+geom_text(aes(label = Letter, y = letter_y_test), position = position_dodge(width = 0.9),vjust = 0) + facet_wrap(~type, scales = "free_x")+
+  ggtitle(label = "ST and MT prediction across models",subtitle = paste("Real dataset",dataset_name,sep =" ")) +
+  theme(
+    plot.title = element_text(
+      size = 20,          # 大字号
+      face = "bold",      # 加粗
+      hjust = 0.5,        # 居中
+      color = "black"     # 颜色（可选）
+    ),
+    # 调整x轴标签字体
+    axis.title.x = element_text(size = 16, face = "bold", color = "black"),
+    # 调整y轴标签字体
+    axis.title.y = element_text(size = 16, face = "bold", color = "black"),
+    #调整副标题
+    plot.subtitle = element_text(size = 12, hjust = 0.5, face = "italic")
+  )
+ggsave(paste("Figrue_",y_lab_name,"_ac_high.pdf",sep = ""), P , width = 15, height = 7, dpi = 300)
+
 zt = checking(pac_mean_sd,cal = "ACC")
 zt1 <- merge(output_test, zt, by = c("MODE", "type","Vtype"), all = FALSE)
 zt1$MODE = factor(zt1$MODE,level = c("GBLUP","FCN","CNN","MNNDR"))
