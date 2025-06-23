@@ -3,6 +3,8 @@ library(ggplot2)
 library(ggsci)
 library(dplyr)
 library(multcompView)
+library(tidyr)
+library(flextable)
 calpercent = function(x,y){
   x = round(x,2)
   y = round(y,2)
@@ -341,6 +343,83 @@ P <- ggplot(data = zt1, aes(x = MODE, y = value, group = MODE, fill = MODE)) +
     plot.subtitle = element_text(size = 12, hjust = 0.5, face = "italic")
   )
 ggsave("Figrue_acc_crap_all.pdf", P , width = 17, height = 8, dpi = 300)
+
+
+
+
+
+datasets = c("crap","rainbow")
+datasets_name = c("Carp1259","Trout1935")
+dt1 = data.table()
+for(d in datasets){
+
+dn = datasets_name[which(datasets == d)]
+
+setwd(paste("/home/kangziyi/comparsionDL/RealData/",d,sep = ""))#crap rainbow
+
+pac_mean_sd = fread("pac_mean_sd.csv",sep = ",")
+pac_mean_sd <- classModel(pac_mean_sd)
+
+pac = fread("pac.csv",sep = ",")
+pac = classModel(pac)
+
+value_type = c("ac","auc")
+type = c("ST","MT")
+zt = checking(pac_mean_sd,cal = "ACC")
+output_test = DT_test(type,value_type,pac)
+zt1 <- merge(output_test, zt, by = c("MODE", "type","Vtype"), all = FALSE)
+zt1$MODE = factor(zt1$MODE,level = c("GBLUP","FCN","CNN","MNNDR"))
+zt1$type = factor(zt1$type,level = c("ST","MT"))
+zt1[Vtype == "ac",Vtype:="Individual accuracy"]
+zt1[Vtype == "auc",Vtype:="AUC"]
+zt1$Vtype = factor(zt1$Vtype,level = c("Individual accuracy","AUC"))
+
+zt1[,dataset:=dn]
+
+dt1 = rbind(dt1,zt1)
+}
+
+
+y_lab_name = "AUC"
+dt = dt1[Vtype==y_lab_name,.(MODE,type,dataset,value,value_sd)]
+dt[, col_id := paste(type, dataset, sep = "_")]
+dt[, value_display := sprintf("%.2f ± %.2f", value, value_sd)]
+
+wide_dt <- dcast(dt, MODE ~ col_id, value.var = "value_display")
+
+ordered_cols = c("MODE")
+for(i in c("ST","MT")){
+   ordered_cols = c(ordered_cols,paste(i,c("Carp1259","Trout1935"),sep = '_'))
+}
+
+wide_dt <- wide_dt[, ..ordered_cols]
+
+# Adjust header map accordingly
+header_map <- data.frame(
+  col_keys = ordered_cols,
+  Type = c("Model", rep(c("ST", "MT"), each = 2)),
+  Datasets = c(" ", rep(c("Carp1259","Trout1935"), 2)),
+  stringsAsFactors = FALSE
+)
+
+ft <- flextable(wide_dt)
+ft <- set_header_df(ft, mapping = header_map, key = "col_keys")
+ft <- merge_h(ft, part = "header")  # merge group headers
+# ft <- merge_v(ft, j = "MODE", part = "body")  # optional: merge MODE column
+ft <- theme_booktabs(ft)
+ft <- autofit(ft)
+ft <- fontsize(ft, size = 9, part = "all")        # smaller font
+ft <- width(ft, width = 0.5)   
+
+save_as_html(ft, path = "model_performance_grouped.html")
+
+library(officer)
+
+doc <- read_docx() |> 
+  body_add_par(paste(y_lab_name,"across models and real datasets",sep = " "), style = "heading 1") |> 
+  body_add_flextable(ft)
+
+print(doc, target = "model_performance_grouped.docx")
 
 
 # zt = checking(wac_mean_sd,pac_mean_sd,cal = "VAR")
