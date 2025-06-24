@@ -1,14 +1,17 @@
+rm(list = ls())
 library(data.table)
 library(ggplot2)
 library(ggsci)
 library(dplyr)
 library(multcompView)
+library(tidyr)
+library(flextable)
 calpercent = function(x,y){
   x = round(x,2)
   y = round(y,2)
-  return(round(((x - y)/y)*100,2))
+  return(round(((x - y)/y)*100,1))
 }
-
+calpercent(x = 0.35,y = 0.27)
 classModel = function(x){
 x[mname%flike%"gblup",MODE:="GBLUP"]
 if(any(x$mname == "pblup")) x[mname%flike%"pblup",MODE:="PBLUP"]
@@ -503,7 +506,7 @@ ggsave("Figrue_cov_medium.pdf", P , width = 15, height = 6, dpi = 300)
 ggsave("Figrue_cov_high.pdf", P , width = 15, height = 8, dpi = 300)
 
 
-
+setwd("/home/kangziyi/comparsionDL/local1cnn/high")#low,medium,high,pure
 
 pac_mean_sd = fread("pac_mean_sd.csv",sep = ",")
 wac_mean_sd = fread("wac_mean_sd.csv",sep = ",")
@@ -515,8 +518,8 @@ wac = fread("wac.csv",sep = ",")
 pac = classModel(pac)
 wac = classModel(wac)
 
-value_type = c("ac","famacc","wfac")
-type = c("ST","MT_continuous","MT_binary")
+DT_test = function(type,value_type,pac,wac){
+
 output_test = data.table()
 
 for(t in type){
@@ -538,6 +541,10 @@ for(v in value_type){
 }
 
 }
+return(output_test)
+
+}
+
 
 # df = checking_rep(wac,pac,cal="ACC")
 
@@ -562,7 +569,12 @@ for(v in value_type){
 #   output_test <- bind_rows(output_test, letter_df)
 # }
 # }
+y_lab_name = "Within-family"
+dataset_name = "(Hig_ADE)"
+value_type = c("ac","famacc","wfac")
+type = c("ST","MT_continuous","MT_binary")
 zt = checking(wac_mean_sd,pac_mean_sd,cal = "ACC")
+output_test = DT_test(type,value_type,pac,wac)
 zt1 <- merge(output_test, zt, by = c("MODE", "type","Vtype"), all = FALSE)
 zt1$MODE = factor(zt1$MODE,level = c("PBLUP","GBLUP","FCN","CNN","MNNDR"))
 zt1$type = factor(zt1$type,level = c("ST","MT_continuous","MT_binary"))
@@ -570,22 +582,43 @@ zt1[Vtype == "ac",Vtype:="Individual"]
 zt1[Vtype == "famacc",Vtype:="Family"]
 zt1[Vtype == "wfac",Vtype:="Within-family"]
 zt1$Vtype = factor(zt1$Vtype,level = c("Individual","Family","Within-family"))
+if(y_lab_name == "Individual"){
 zt1[, letter_y_value := value + 1.1 * value_sd, by = Vtype]
-zt1[, letter_y_test := value + 3.1 * max(value_sd), by = Vtype]
-zt1[Vtype != "Within-family", letter_y_test := value + 5.1 * max(value_sd)]
-P <- ggplot(data = zt1, aes(x = MODE, y = value, group = MODE, fill = MODE)) +
+zt1[, letter_y_test := value + 3.1 * value_sd, by = Vtype]
+zt1[MODE== "FCN"&type=="MT_continuous", letter_y_test := value + 6.1 * value_sd]
+if(dataset_name == "(Low_ADE)") zt1[, letter_y_test := value + 6.1 * value_sd, by = Vtype]
+if(dataset_name == "(Linear_A)") zt1[, letter_y_test := value + 10.1 * value_sd, by = Vtype]
+if(dataset_name == "(Med_ADE)"){
+  zt1[MODE== "CNN"&type=="MT_binary", letter_y_test := value + 6.1 * value_sd]
+  zt1[MODE== "FCN"&type=="MT_continuous", letter_y_test := value + 6.1 * value_sd]
+  zt1[MODE== "GBLUP", letter_y_test := value + 6.1 * value_sd]
+}
+}else if(y_lab_name == "Family"){
+zt1[, letter_y_value := value + 1.1 * value_sd, by = Vtype]
+zt1[, letter_y_test := value + 3.1 * value_sd, by = Vtype]
+zt1[MODE== "FCN"&type=="MT_continuous", letter_y_test := value + 4.1 * value_sd]
+if(dataset_name == "(Low_ADE)") zt1[, letter_y_test := value + 6.1 * value_sd, by = Vtype]
+if(dataset_name == "(Linear_A)") zt1[, letter_y_test := value + 10.1 * value_sd, by = Vtype]
+}else{
+zt1[, letter_y_value := value + 1.1 * value_sd, by = Vtype]
+zt1[, letter_y_test := value + 3.1 * value_sd, by = Vtype]
+zt1[MODE== "CNN"&type=="ST", letter_y_test := value + 2.1 * value_sd]
+zt1[MODE== "FCN"&type=="MT_continuous", letter_y_test := value + 6.1 * value_sd]
+if(dataset_name == "(Linear_A)") zt1[MODE== "CNN"&type=="ST", letter_y_test := value + 3.1 * value_sd]
+}
+P <- ggplot(data = zt1[Vtype==y_lab_name,], aes(x = MODE, y = value, group = MODE, fill = MODE)) +
   geom_bar(stat = "identity", position = position_dodge(width = 0.9),width = 0.9) +  # 确保条形图分组不重叠
   geom_text(aes(label = round(value,2),y = letter_y_value), position = position_dodge(width = 0.9),vjust = 0, size = 4) +  # 添加数值标签
   xlab("Model") +
-  ylab("Accuracy") +
+  ylab(paste(y_lab_name,"accuracy",sep = " ")) +
   theme_zg() +
   theme(legend.position ="right", legend.title = element_blank()) +
   geom_errorbar(aes(ymin = value - value_sd, ymax = value + value_sd),
                 position = position_dodge(width = 0.9),  # 与条形图对齐
                 width = 0.2, alpha = 0.5) +
   labs(fill = "Mat") +
-  scale_fill_aaas()+geom_text(aes(label = Letter, y = letter_y_test), position = position_dodge(width = 0.9),vjust = 0) + facet_wrap(~type + Vtype, scales = "free")+
-  ggtitle(label = "ST and MT prediction across models",subtitle = "Simulated dataset (high non-additive)") +
+  scale_fill_aaas()+geom_text(aes(label = Letter, y = letter_y_test), position = position_dodge(width = 0.9),vjust = 0) + facet_wrap(~type, scales = "free_x")+
+  ggtitle(label = "ST and MT prediction across models",subtitle = paste("Simulated dataset",dataset_name,sep =" ")) +
   theme(
     plot.title = element_text(
       size = 20,          # 大字号
@@ -600,4 +633,132 @@ P <- ggplot(data = zt1, aes(x = MODE, y = value, group = MODE, fill = MODE)) +
     #调整副标题
     plot.subtitle = element_text(size = 12, hjust = 0.5, face = "italic")
   )
-ggsave("Figrue_ac_high.pdf", P , width = 15, height = 15, dpi = 300)
+ggsave(paste("Figrue_",y_lab_name,"_ac_high.pdf",sep = ""), P , width = 15, height = 7, dpi = 300)
+
+
+dt = zt1[Vtype==y_lab_name,.(MODE,type,value,value_sd)]
+dt[, value_display := sprintf("%.2f ± %.2f", value, value_sd)]
+wide_dt <- dcast(dt, MODE ~ type, value.var = "value_display")
+
+ft <- flextable(wide_dt)
+ft <- autofit(ft)
+save_as_html(ft, path = "academic_table.html")
+
+
+
+dt = zt1[,.(MODE,type,Vtype,value,value_sd)]
+dt[, col_id := paste(type, Vtype, sep = "_")]
+dt[, value_display := sprintf("%.2f ± %.2f", value, value_sd)]
+
+wide_dt <- dcast(dt, MODE ~ col_id, value.var = "value_display")
+
+ordered_cols <- c("MODE",
+  "MT_binary_Individual", "MT_binary_Family", "MT_binary_Within-family",
+  "MT_continuous_Individual", "MT_continuous_Family", "MT_continuous_Within-family",
+  "ST_Individual", "ST_Family", "ST_Within-family"
+)
+wide_dt <- wide_dt[, ..ordered_cols]
+
+# Adjust header map accordingly
+header_map <- data.frame(
+  col_keys = ordered_cols,
+  Type = c("MODE", rep(c("MT_binary", "MT_binary", "MT_binary",
+                         "MT_continuous", "MT_continuous", "MT_continuous",
+                         "ST", "ST", "ST"))),
+  Vtype = c(" ", rep(c("Individual", "Family", "Within-family"), 3)),
+  stringsAsFactors = FALSE
+)
+
+ft <- flextable(wide_dt)
+ft <- set_header_df(ft, mapping = header_map, key = "col_keys")
+ft <- merge_h(ft, part = "header")  # merge group headers
+ft <- merge_v(ft, j = "MODE", part = "body")  # optional: merge MODE column
+ft <- theme_booktabs(ft)
+ft <- autofit(ft)
+
+save_as_html(ft, path = "model_performance_grouped.html")
+# library(officer)
+# doc <- read_docx() |> 
+#   body_add_par("Academic Table of MODEs", style = "heading 1") |> 
+#   body_add_flextable(ft)
+
+# print(doc, target = "academic_table.docx")
+
+
+datasets = c("pure","low","medium","high")
+datasets_name = c("Linear-A","Low-ADE","Med-ADE","Hig-ADE")
+dt1 = data.table()
+for(d in datasets){
+
+dn = datasets_name[which(datasets == d)]
+
+setwd(paste("/home/kangziyi/comparsionDL/local1cnn/",d,sep = ""))#low,medium,high,pure
+
+pac_mean_sd = fread("pac_mean_sd.csv",sep = ",")
+wac_mean_sd = fread("wac_mean_sd.csv",sep = ",")
+pac_mean_sd <- classModel(pac_mean_sd)
+wac_mean_sd = classModel(wac_mean_sd)
+
+pac = fread("pac.csv",sep = ",")
+wac = fread("wac.csv",sep = ",")
+pac = classModel(pac)
+wac = classModel(wac)
+
+value_type = c("ac","famacc","wfac")
+type = c("ST","MT_continuous","MT_binary")
+zt = checking(wac_mean_sd,pac_mean_sd,cal = "ACC")
+output_test = DT_test(type,value_type,pac,wac)
+zt1 <- merge(output_test, zt, by = c("MODE", "type","Vtype"), all = FALSE)
+zt1$MODE = factor(zt1$MODE,level = c("PBLUP","GBLUP","FCN","CNN","MNNDR"))
+zt1$type = factor(zt1$type,level = c("ST","MT_continuous","MT_binary"))
+zt1[Vtype == "ac",Vtype:="Individual"]
+zt1[Vtype == "famacc",Vtype:="Family"]
+zt1[Vtype == "wfac",Vtype:="Within-family"]
+zt1$Vtype = factor(zt1$Vtype,level = c("Individual","Family","Within-family"))
+
+zt1[,dataset:=dn]
+
+dt1 = rbind(dt1,zt1)
+}
+
+
+y_lab_name = "Family"
+dt = dt1[Vtype==y_lab_name,.(MODE,type,dataset,value,value_sd)]
+dt[, col_id := paste(type, dataset, sep = "_")]
+dt[, value_display := sprintf("%.2f ± %.2f", value, value_sd)]
+
+wide_dt <- dcast(dt, MODE ~ col_id, value.var = "value_display")
+
+ordered_cols = c("MODE")
+for(i in c("ST","MT_continuous","MT_binary")){
+   ordered_cols = c(ordered_cols,paste(i,c("Linear-A","Low-ADE","Med-ADE","Hig-ADE"),sep = '_'))
+}
+
+wide_dt <- wide_dt[, ..ordered_cols]
+
+# Adjust header map accordingly
+header_map <- data.frame(
+  col_keys = ordered_cols,
+  Type = c("Model", rep(c("ST", "MT_continuous", "MT_binary"), each = 4)),
+  Datasets = c(" ", rep(c("Linear-A","Low-ADE","Med-ADE","Hig-ADE"), 3)),
+  stringsAsFactors = FALSE
+)
+
+ft <- flextable(wide_dt)
+ft <- set_header_df(ft, mapping = header_map, key = "col_keys")
+ft <- merge_h(ft, part = "header")  # merge group headers
+ft <- merge_v(ft, j = "MODE", part = "body")  # optional: merge MODE column
+ft <- theme_booktabs(ft)
+ft <- autofit(ft)
+ft <- fontsize(ft, size = 9, part = "all")        # smaller font
+ft <- width(ft, width = 0.5)   
+
+save_as_html(ft, path = "model_performance_grouped.html")
+
+library(officer)
+
+doc <- read_docx() |> 
+  body_add_par(paste(y_lab_name,"accuracy across models and simulated datasets",sep = " "), style = "heading 1") |> 
+  body_add_flextable(ft)
+
+print(doc, target = "model_performance_grouped.docx")
