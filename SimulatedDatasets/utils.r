@@ -202,7 +202,7 @@ calEBV = function(x,y,h2,type = "D"){
   
   Z[cbind(diag_indices, diag_indices)] = 1
   
-  mat = makeGDE(x = x,type = type)
+  mat = makeGDE(x = x,type = type) #Extract this calculation out of this function
   
   if(type == "D"){
   
